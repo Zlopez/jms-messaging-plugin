@@ -111,7 +111,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
             trustManagerFactory.init(tks);
 
-            SSLContext c = SSLContext.getDefault();
+            SSLContext c = SSLContext.getInstance("TLSv1.2");
             c.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 
             ConnectionFactory connectionFactory = new ConnectionFactory();
