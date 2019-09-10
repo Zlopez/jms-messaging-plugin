@@ -24,6 +24,9 @@
      */
   -->
       <f:nested>
+        <f:entry title="${%User name}" field="username">
+          <f:textbox />
+        </f:entry>
         <f:entry title="${%Key store}" field="keystore">
           <f:textbox />
         </f:entry>

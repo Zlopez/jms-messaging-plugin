@@ -14,6 +14,7 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultSaslConfig;
 
 import javax.net.ssl.*;
 import javax.servlet.ServletException;
@@ -50,18 +51,24 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
     private static final long serialVersionUID = -5934219869726669459L;
     private transient static final Logger log = Logger.getLogger(SSLCertificateAuthenticationMethod.class.getName());
 
+    private String username;
     private String keystore;
     private Secret keypwd = Secret.fromString("");
     private String truststore;
     private Secret trustpwd = Secret.fromString("");
 
     @DataBoundConstructor
-    public SSLCertificateAuthenticationMethod(String keystore, Secret keypwd, String truststore, Secret trustpwd) {
+    public SSLCertificateAuthenticationMethod(String username, String keystore, Secret keypwd, String truststore, Secret trustpwd) {
+        this.setUsername(username);
         this.setKeystore(keystore);
         this.setKeypwd(keypwd);
         this.setTruststore(truststore);
         this.setTrustpwd(trustpwd);
     }
+
+    public String getUsername() { return username; }
+
+    public void setUsername(String username) { this.username = username; }
 
     public String getKeystore() {
         return keystore;
@@ -115,10 +122,12 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             c.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 
             ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.setUsername(getUsername());
             connectionFactory.setHost(hostName);
             connectionFactory.setPort(portNumber);
             connectionFactory.setVirtualHost(virtualHost);
             connectionFactory.useSslProtocol(c);
+            connectionFactory.setSaslConfig(DefaultSaslConfig.EXTERNAL);
             connectionFactory.enableHostnameVerification();
             return connectionFactory;
         } catch (Exception e) {
@@ -142,7 +151,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
+            return new SSLCertificateAuthenticationMethod(jo.getString("username"),jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
                                                           jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }
 
@@ -151,7 +160,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
         }
 
         @RequirePOST
-        public FormValidation doTestConnection(@QueryParameter("hostName") String hostName,
+        public FormValidation doTestConnection(@QueryParameter("username") String username,
+                                               @QueryParameter("hostName") String hostName,
                                                @QueryParameter("portNumber") Integer portNumber,
                                                @QueryParameter("virtualHost") String virtualHost,
                                                @QueryParameter("keystore") String keystore,
@@ -164,7 +174,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             Connection connection = null;
             Channel channel = null;
             try {
-                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(username,
+                        keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
                 ConnectionFactory connectionFactory = sam.getConnectionFactory(hostName, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();
