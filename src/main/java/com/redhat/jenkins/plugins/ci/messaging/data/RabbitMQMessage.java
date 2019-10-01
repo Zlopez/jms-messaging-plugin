@@ -89,6 +89,7 @@ public class RabbitMQMessage {
 
         if (!StringUtils.isBlank(body)) {
             try {
+                log.log(Level.INFO, "Message to serialize: '" + body + "'");
                 ObjectMapper mapper = new ObjectMapper();
                 TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
                 msg = mapper.readValue(body, typeRef);
