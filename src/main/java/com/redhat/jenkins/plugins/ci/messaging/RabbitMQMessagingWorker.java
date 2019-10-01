@@ -68,7 +68,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     if (channel == null) {
                         this.channel = connection.createChannel();
                         log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        channel.queueDeclarePassive(EXCHANGE_NAME);
+                        channel.exchangeDeclarePassive(EXCHANGE_NAME);
                         String queueName = channel.queueDeclare().getQueue();
                         channel.queueBind(queueName, EXCHANGE_NAME, this.topic);
 
@@ -262,7 +262,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             body = msg.toJson(); // Use toString() instead of getBodyJson so that message ID is included and sent.
             msgId = msg.getMsgId();
             try {
-                channel.queueDeclarePassive(EXCHANGE_NAME);
+                channel.exchangeDeclarePassive(EXCHANGE_NAME);
                 channel.basicPublish(EXCHANGE_NAME, msg.getTopic(), MessageProperties.PERSISTENT_TEXT_PLAIN, body.getBytes());
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
@@ -311,7 +311,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             if (channel == null) {
                 this.channel = connection.createChannel();
             }
-            channel.queueDeclarePassive(EXCHANGE_NAME);
+            channel.exchangeDeclarePassive(EXCHANGE_NAME);
             queue = channel.queueDeclare().getQueue();
             channel.queueBind(queue, EXCHANGE_NAME, this.topic);
         } catch (Exception ex) {
