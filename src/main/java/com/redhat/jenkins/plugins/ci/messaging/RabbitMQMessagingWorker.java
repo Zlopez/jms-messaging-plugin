@@ -42,13 +42,15 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     // Concurrent message queue used for saving messages from consumer
     private ConcurrentLinkedQueue<RabbitMQMessage> messageQueue = new ConcurrentLinkedQueue<RabbitMQMessage>();
     private String consumerTag = "";
-
-    private static final String EXCHANGE_NAME = "amq.topic";
+    private String queueName = "";
+    private String exchangeName = "";
 
     public RabbitMQMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (RabbitMQMessagingProvider) messagingProvider;
         this.connection = provider.getConnection();
+        this.exchangeName = provider.getExchange();
+        this.queueName = provider.getQueue();
         this.topic = getTopic(provider);
     }
 
@@ -68,9 +70,9 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     if (channel == null) {
                         this.channel = connection.createChannel();
                         log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        channel.exchangeDeclarePassive(EXCHANGE_NAME);
-                        String queueName = channel.queueDeclare().getQueue();
-                        channel.queueBind(queueName, EXCHANGE_NAME, this.topic);
+                        channel.exchangeDeclarePassive(exchangeName);
+                        String queueName = getQueue(provider);
+                        channel.queueBind(queueName, exchangeName, this.topic);
 
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
@@ -262,8 +264,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             body = msg.toJson(); // Use toString() instead of getBodyJson so that message ID is included and sent.
             msgId = msg.getMsgId();
             try {
-                channel.exchangeDeclarePassive(EXCHANGE_NAME);
-                channel.basicPublish(EXCHANGE_NAME, msg.getTopic(), MessageProperties.PERSISTENT_TEXT_PLAIN, body.getBytes());
+                channel.exchangeDeclarePassive(exchangeName);
+                channel.basicPublish(exchangeName, msg.getTopic(), MessageProperties.PERSISTENT_TEXT_PLAIN, body.getBytes());
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");
@@ -302,7 +304,6 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData)pdata;
-        String queue;
 
         try {
             if (connection == null || !connection.isOpen()) {
@@ -311,9 +312,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             if (channel == null) {
                 this.channel = connection.createChannel();
             }
-            channel.exchangeDeclarePassive(EXCHANGE_NAME);
-            queue = channel.queueDeclare().getQueue();
-            channel.queueBind(queue, EXCHANGE_NAME, this.topic);
+            channel.exchangeDeclarePassive(exchangeName);
+            channel.queueBind(getQueue(provider), exchangeName, this.topic);
         } catch (Exception ex) {
             log.severe("Connection to broker can't be established!");
             log.severe(ExceptionUtils.getStackTrace(ex));
@@ -352,7 +352,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         int timeoutInMs = timeout * 60 * 1000;
 
         try {
-            consumerTag = channel.basicConsume(queue, deliverCallback, (CancelCallback) null);
+            consumerTag = channel.basicConsume(getQueue(provider), deliverCallback, (CancelCallback) null);
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (!messageQueue.isEmpty()) {
 
@@ -402,4 +402,16 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         return null;
     }
 
+    protected String getQueue(JMSMessagingProvider provider) {
+        String ltopic;
+        RabbitMQMessagingProvider providerd = (RabbitMQMessagingProvider) provider;
+        if (overrides != null && overrides.getQueue() != null && !overrides.getQueue().isEmpty()) {
+            ltopic = overrides.getQueue();
+        } else if (providerd.getQueue() != null && !providerd.getQueue().isEmpty()) {
+            ltopic = providerd.getQueue();
+        } else {
+            ltopic = queueName;
+        }
+        return PluginUtils.getSubstitutedValue(ltopic, null);
+    }
 }

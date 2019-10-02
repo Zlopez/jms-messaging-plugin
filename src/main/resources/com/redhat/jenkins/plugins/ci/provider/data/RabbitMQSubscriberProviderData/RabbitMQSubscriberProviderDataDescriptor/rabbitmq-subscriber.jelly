@@ -44,6 +44,11 @@
           <f:textbox value="${value}"/>
         </f:entry>
       </f:optionalBlock>
+      <f:optionalBlock field="overrides" title="Override provider queue" checked="${checked}">
+        <f:entry title="${%Queue name}" field="queue">
+          <f:textbox value="${value}"/>
+        </f:entry>
+      </f:optionalBlock>
     </table>
     <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
         <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}" minimum="0">

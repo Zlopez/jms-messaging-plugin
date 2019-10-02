@@ -40,6 +40,12 @@
     <f:entry title="${%Topic}" field="topic">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%Exchange}" field="exchange">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%Queue}" field="queue">
+      <f:textbox />
+    </f:entry>
     <f:dropdownDescriptorSelector title="${%Authentication Method}"
                                   field="authenticationMethod"
                                   descriptors="${descriptor.getAuthenticationMethodDescriptors()}" />

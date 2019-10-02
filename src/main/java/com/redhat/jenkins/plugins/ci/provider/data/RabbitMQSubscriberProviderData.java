@@ -139,6 +139,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+                mpo.setQueue(jo.getJSONObject("overrides").getString("queue"));
             }
             List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
             String variable = null;
