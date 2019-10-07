@@ -31,6 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import net.sf.json.JSON;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 
@@ -131,6 +132,9 @@ public class RabbitMQMessage {
     @JsonIgnore
     public String getBodyJson() {
         if (msg != null) {
+            if (JSONObject.fromObject(msg).containsKey("msg")) {
+                return JSONObject.fromObject(msg).get("msg").toString();
+            }
             return JSONObject.fromObject(msg).toString();
         }
         return "";
