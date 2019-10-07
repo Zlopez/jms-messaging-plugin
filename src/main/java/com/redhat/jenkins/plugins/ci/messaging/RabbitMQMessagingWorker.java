@@ -357,6 +357,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 if (!messageQueue.isEmpty()) {
 
                     String message = messageQueue.poll().getBodyJson();
+                    log.info("Obtained message from queue: " + message);
 
                     if (!provider.verify(message, pd.getChecks(), jobname)) {
                         continue;
