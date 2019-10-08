@@ -75,18 +75,24 @@ public class RabbitMQMessage {
     private long timestamp;
     private String topic;
     private String msgId;
+    private long deliveryTag;
     @JsonProperty("msg")
     private Map<String, Object> msg = null;
 
     public RabbitMQMessage() {}
 
     public RabbitMQMessage(String topic) {
-        this(topic, null);
+        this(topic, null, 0);
     }
 
     public RabbitMQMessage(String topic, String body) {
+        this(topic, body, 0);
+    }
+
+    public RabbitMQMessage(String topic, String body, long deliveryTag) {
         this.topic = topic;
         this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
+        this.deliveryTag = deliveryTag;
 
         if (!StringUtils.isBlank(body)) {
             try {
@@ -112,13 +118,15 @@ public class RabbitMQMessage {
         return new Date(this.timestamp);
     }
 
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public long getDeliveryTag() { return deliveryTag; }
+
     @JsonProperty("msg_id")
     public final String getMsgId() {
         return this.msgId;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public Map<String, Object> getMsg() {
@@ -127,6 +135,14 @@ public class RabbitMQMessage {
 
     public void setMsg(Map<String, Object> msg) {
         this.msg = msg;
+    }
+
+    @JsonIgnore
+    public String getJson() {
+        if (msg != null) {
+            return JSONObject.fromObject(msg).toString();
+        }
+        return "";
     }
 
     @JsonIgnore

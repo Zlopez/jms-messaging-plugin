@@ -175,9 +175,10 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
-                        params.put("CI_MESSAGE", data.getBodyJson());
+                        params.put("CI_MESSAGE", data.getJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
+                    channel.basicAck(data.getDeliveryTag(), false);
                 } else {
                     if (interrupt) {
                         log.info("We have been interrupted...");
@@ -356,21 +357,23 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (!messageQueue.isEmpty()) {
 
-                    String message = messageQueue.poll().getBodyJson();
-                    log.info("Obtained message from queue: " + message);
+                    RabbitMQMessage message = messageQueue.poll();
+                    log.info("Obtained message from queue: " + message.getJson());
 
-                    if (!provider.verify(message, pd.getChecks(), jobname)) {
+                    if (!provider.verify(message.getBodyJson(), pd.getChecks(), jobname)) {
+                        channel.basicAck(message.getDeliveryTag(), false);
                         continue;
                     }
 
                     if (build != null) {
                         if (StringUtils.isNotEmpty(pd.getVariable())) {
                             EnvVars vars = new EnvVars();
-                            vars.put(pd.getVariable(), message);
+                            vars.put(pd.getVariable(), message.getJson());
                             build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                     }
-                    return message;
+                    channel.basicAck(message.getDeliveryTag(), false);
+                    return message.getJson();
                 }
                 if (interrupt) {
                     return null;
