@@ -262,7 +262,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
             msg.setTimestamp(System.currentTimeMillis());
 
-            body = msg.toJson(); // Use toString() instead of getBodyJson so that message ID is included and sent.
+            body = msg.getJson(); // Use getJson() instead of getBodyJson so that message ID is included and sent.
             msgId = msg.getMsgId();
             try {
                 channel.exchangeDeclarePassive(exchangeName);
@@ -364,6 +364,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         channel.basicAck(message.getDeliveryTag(), false);
                         continue;
                     }
+                    listener.getLogger().println(
+                            "Message: '" + message.getJson() + "' was succesfully checked.");
 
                     if (build != null) {
                         if (StringUtils.isNotEmpty(pd.getVariable())) {
