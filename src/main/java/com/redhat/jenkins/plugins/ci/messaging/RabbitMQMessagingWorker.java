@@ -77,7 +77,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                             String json = new String(delivery.getBody(), "UTF-8");
-                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json);
+                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getEnvelope().getDeliveryTag());
                             message.setTimestamp(new Date().getTime());
                             messageQueue.add(message);
 
@@ -340,7 +340,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             listener.getLogger().println(
                     "Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + json + "'");
             log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + json + "'");
-            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json);
+            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getEnvelope().getDeliveryTag());
             message.setTimestamp(new Date().getTime());
             messageQueue.add(message);
 
