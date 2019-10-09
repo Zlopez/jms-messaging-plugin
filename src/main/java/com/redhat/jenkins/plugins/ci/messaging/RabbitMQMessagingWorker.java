@@ -77,8 +77,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                             String json = new String(delivery.getBody(), "UTF-8");
-                            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
-                            log.info("Message id: " + delivery.getProperties().getMessageId());
+                            log.info(
+                                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
                             RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
                             message.setTimestamp(new Date().getTime());
                             message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
@@ -269,7 +269,9 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             msgId = msg.getMsgId();
             try {
                 channel.exchangeDeclarePassive(exchangeName);
-                channel.basicPublish(exchangeName, msg.getTopic(), MessageProperties.PERSISTENT_TEXT_PLAIN, body.getBytes());
+                channel.basicPublish(exchangeName, msg.getTopic(),
+                        new AMQP.BasicProperties.Builder()
+                        .messageId(msgId).build(), body.getBytes());
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");
@@ -277,6 +279,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 }
             }
             log.fine("JSON message:\n" + msg.toJson());
+            listener.getLogger().println("Message id: " + msg.getMsgId());
             listener.getLogger().println("Message topic: " + msg.getTopic());
             listener.getLogger().println("JSON message body:\n" + body);
 
@@ -342,10 +345,9 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String json = new String(delivery.getBody(), "UTF-8");
             listener.getLogger().println(
-                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
-            listener.getLogger().println("Message id: " + delivery.getProperties().getMessageId());
-            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
-            log.info("Message id: " + delivery.getProperties().getMessageId());
+                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
+            log.info(
+                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
             RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
             message.setTimestamp(new Date().getTime());
             message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
