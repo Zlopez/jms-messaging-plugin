@@ -82,17 +82,21 @@ public class RabbitMQMessage {
     public RabbitMQMessage() {}
 
     public RabbitMQMessage(String topic) {
-        this(topic, null, 0);
+        this(topic, null, null);
     }
 
     public RabbitMQMessage(String topic, String body) {
-        this(topic, body, 0);
+        this(topic, body, null);
     }
 
-    public RabbitMQMessage(String topic, String body, long deliveryTag) {
+    public RabbitMQMessage(String topic, String body, String msgId) {
         this.topic = topic;
-        this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
-        this.deliveryTag = deliveryTag;
+        if (msgId != null) {
+            this.msgId = msgId;
+        }
+        else {
+            this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
+        }
 
         if (!StringUtils.isBlank(body)) {
             try {
@@ -124,6 +128,8 @@ public class RabbitMQMessage {
 
     public long getDeliveryTag() { return deliveryTag; }
 
+    public void setDeliveryTag(long deliveryTag) { this.deliveryTag = deliveryTag; }
+
     @JsonProperty("msg_id")
     public final String getMsgId() {
         return this.msgId;
@@ -140,9 +146,6 @@ public class RabbitMQMessage {
     @JsonIgnore
     public String getBodyJson() {
         if (msg != null) {
-            if (JSONObject.fromObject(msg).containsKey("msg")) {
-                return JSONObject.fromObject(msg).get("msg").toString();
-            }
             return JSONObject.fromObject(msg).toString();
         }
         return "";

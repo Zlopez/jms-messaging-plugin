@@ -77,8 +77,11 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                             String json = new String(delivery.getBody(), "UTF-8");
-                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getEnvelope().getDeliveryTag());
+                            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
+                            log.info("Message id: " + delivery.getProperties().getMessageId());
+                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
                             message.setTimestamp(new Date().getTime());
+                            message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
                             messageQueue.add(message);
 
                         };
@@ -262,7 +265,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
             msg.setTimestamp(System.currentTimeMillis());
 
-            body = msg.toJson(); // Use toJson() instead of getBodyJson so that message ID is included and sent.
+            body = msg.getBodyJson();
             msgId = msg.getMsgId();
             try {
                 channel.exchangeDeclarePassive(exchangeName);
@@ -273,7 +276,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     return new SendResult(false, msgId, body);
                 }
             }
-            log.fine("JSON message body:\n" + body);
+            log.fine("JSON message:\n" + msg.toJson());
+            listener.getLogger().println("Message topic: " + msg.getTopic());
             listener.getLogger().println("JSON message body:\n" + body);
 
         } catch (Exception e) {
@@ -338,10 +342,13 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String json = new String(delivery.getBody(), "UTF-8");
             listener.getLogger().println(
-                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + json + "'");
-            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + json + "'");
-            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getEnvelope().getDeliveryTag());
+                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
+            listener.getLogger().println("Message id: " + delivery.getProperties().getMessageId());
+            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n'" + json + "'");
+            log.info("Message id: " + delivery.getProperties().getMessageId());
+            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
             message.setTimestamp(new Date().getTime());
+            message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
             messageQueue.add(message);
 
         };
@@ -365,17 +372,17 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         continue;
                     }
                     listener.getLogger().println(
-                            "Message: '" + message.toJson() + "' was succesfully checked.");
+                            "Message: '" + message.getMsgId() + "' was succesfully checked.");
 
                     if (build != null) {
                         if (StringUtils.isNotEmpty(pd.getVariable())) {
                             EnvVars vars = new EnvVars();
-                            vars.put(pd.getVariable(), message.toJson());
+                            vars.put(pd.getVariable(), message.getBodyJson());
                             build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                     }
                     channel.basicAck(message.getDeliveryTag(), false);
-                    return message.toJson();
+                    return message.getBodyJson();
                 }
                 if (interrupt) {
                     return null;
