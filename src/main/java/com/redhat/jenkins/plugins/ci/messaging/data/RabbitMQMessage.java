@@ -138,14 +138,6 @@ public class RabbitMQMessage {
     }
 
     @JsonIgnore
-    public String getJson() {
-        if (msg != null) {
-            return JSONObject.fromObject(msg).toString();
-        }
-        return "";
-    }
-
-    @JsonIgnore
     public String getBodyJson() {
         if (msg != null) {
             if (JSONObject.fromObject(msg).containsKey("msg")) {

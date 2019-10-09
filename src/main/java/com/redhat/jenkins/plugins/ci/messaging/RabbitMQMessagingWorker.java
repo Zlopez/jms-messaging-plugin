@@ -175,7 +175,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
-                        params.put("CI_MESSAGE", data.getJson());
+                        params.put("CI_MESSAGE", data.toJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
                     channel.basicAck(data.getDeliveryTag(), false);
@@ -262,7 +262,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
             msg.setTimestamp(System.currentTimeMillis());
 
-            body = msg.getJson(); // Use getJson() instead of getBodyJson so that message ID is included and sent.
+            body = msg.toJson(); // Use toJson() instead of getBodyJson so that message ID is included and sent.
             msgId = msg.getMsgId();
             try {
                 channel.exchangeDeclarePassive(exchangeName);
@@ -358,24 +358,24 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 if (!messageQueue.isEmpty()) {
 
                     RabbitMQMessage message = messageQueue.poll();
-                    log.info("Obtained message from queue: " + message.getJson());
+                    log.info("Obtained message from queue: " + message.toJson());
 
                     if (!provider.verify(message.getBodyJson(), pd.getChecks(), jobname)) {
                         channel.basicAck(message.getDeliveryTag(), false);
                         continue;
                     }
                     listener.getLogger().println(
-                            "Message: '" + message.getJson() + "' was succesfully checked.");
+                            "Message: '" + message.toJson() + "' was succesfully checked.");
 
                     if (build != null) {
                         if (StringUtils.isNotEmpty(pd.getVariable())) {
                             EnvVars vars = new EnvVars();
-                            vars.put(pd.getVariable(), message.getJson());
+                            vars.put(pd.getVariable(), message.toJson());
                             build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                     }
                     channel.basicAck(message.getDeliveryTag(), false);
-                    return message.getJson();
+                    return message.toJson();
                 }
                 if (interrupt) {
                     return null;
